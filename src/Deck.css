@@ -1,0 +1,30 @@
+.deck-btn {
+    padding: .5rem 1rem;
+    margin: .25rem;
+    font-weight: bold;
+    border: 3px solid #303655;
+    border-radius: 5px;
+    background-color: hsl(230.27,27.82%,26.08%);
+    color: hsl(230,25.08%,95.0%);
+}
+
+button[disabled=disabled], button:disabled  {
+    color: hsl(230,25.08%,50.08%);
+}
+
+.deck-btn:hover {
+    background-color: hsl(234.27,30.82%,50.08%);
+}
+
+.deck-draw-btn-span {
+display: block;
+}
+
+.deck-draw-btn {
+    font-size: 1.1rem;
+}
+
+.deck-cards-div{
+    margin-top: 2rem;
+    background-color: #737CCF;
+}

@@ -1,19 +1,27 @@
 import React, { useState, useRef, useEffect } from 'react';
 import axios from 'axios';
 import Card from './Card';
+import AllCards from './AllCards';
+import './Deck.css';
 
 const Deck = () => {
     const newDeckUrl = 'https://www.deckofcardsapi.com/api/deck/new/';
 
     const [deckId, setDeckId] = useState('');
-    const [newDeckClicked, setNewDeckClicked] = useState(false);
     const [errorExists, setErrorExists] = useState(false);
+    const [currCard, setCurrCard] = useState(null);
+    const [drawClicked, setDrawClicked] = useState(false);
+    const [buttonsDisabled, setButtonsDisabled] = useState(true);
+    const [prevCards, setPrevCards] = useState([]);
+
+    async function openDeck() {
+        const response = await axios.get(newDeckUrl);
+        setErrorExists(false);
+        setDeckId(response.data.deck_id);
+        setButtonsDisabled(false);
+    }
 
     useEffect(() => {
-        async function openDeck() {
-            const response = await axios.get(newDeckUrl);
-            setDeckId(response.data.deck_id);
-        }
         try {
             openDeck();
         }
@@ -23,54 +31,39 @@ const Deck = () => {
                 msg: "Problem loading deck. Please check connection and try again."
             });
         };
-    }, [newDeckClicked]);
+    }, []);
 
-    const [currCard, setCurrCard] = useState(null);
-    const [drawClicked, setDrawClicked] = useState(false);
-    // const [drawBtnDisabled, setDrawBtnDisabled] = useState(false);
-    const [shuffleClicked, setShuffleClicked] = useState(false);
-    const [shuffleDisabled, setShuffleDisabled] = useState(false);
 
-    useEffect(() => {
-        async function drawCard() {
-            try {
-                const response = await axios.get(`https://deckofcardsapi.com/api/deck/${deckId}/draw/?count=1`);
-                const card = response.data.cards[0].image;
-                setCurrCard(card);
-            } catch (err) {
-                setErrorExists({
-                    err: true,
-                    msg: "No more cards in deck!"
-                });
-            };
-        };
-        drawCard();
-        setDrawClicked(false);
-    }, [drawClicked])
 
-    // useEffect(() => {
-    //     setDrawClicked(false);
-    // }, [currCard])
-
-    useEffect(() => {
-        async function shuffleDeck() {
-            setCurrCard(null);
-            await axios.get(`https://deckofcardsapi.com/api/deck/${deckId}/shuffle/?remaining=true`);
-        }
-        async function drawNext() {
+    async function drawCard() {
+        try {
             const response = await axios.get(`https://deckofcardsapi.com/api/deck/${deckId}/draw/?count=1`);
             const card = response.data.cards[0].image;
-            setCurrCard(card);
-        }
-        if (shuffleClicked === true) {
-            shuffleDeck();
-            drawNext();
-        }
-        return () => {
-            setShuffleClicked(false);
-            setShuffleDisabled(false);
+            return setCurrCard(card);
+            
+        } catch (err) {
+            console.log("catching")
+            setErrorExists({
+                err: true,
+                msg: "No more cards in deck!"
+            });
         };
-    }, [shuffleClicked])
+    };
+
+
+    useEffect(() => {
+        if (currCard !== null) {
+            setPrevCards([currCard, ...prevCards])
+        }
+    }, [currCard]);
+    
+    async function shuffleDeck() {
+        setPrevCards([]);
+        setCurrCard(null);
+        await axios.get(`https://deckofcardsapi.com/api/deck/${deckId}/shuffle/?remaining=true`);
+        drawCard();
+        setButtonsDisabled(false);
+    }
 
     function checkErrorsBeforeRender() {
         return !(errorExists) ? <Card card={currCard} /> : <h1>{errorExists.msg}</h1>
@@ -81,20 +74,32 @@ const Deck = () => {
     return (
         <div>
             <div>
-                <button onClick={() => setDrawClicked(true)}>Draw a Card</button>
-                <button onClick={() => {
-                    setShuffleClicked(true)
-                    setShuffleDisabled(true)
-                }}
-                    disabled={shuffleDisabled}>Shuffle Deck</button>
-                <button onClick={() => {
-                    setNewDeckClicked(true);
-                    setErrorExists(false);
-                }}>New Deck</button>
+                <button className="deck-btn" disabled={buttonsDisabled}
+                    onClick={() => {
+                        setButtonsDisabled(true);
+                        shuffleDeck();
+                    }}>SHUFFLE DECK</button>
+
+                <button className="deck-btn" disabled={buttonsDisabled}
+                    onClick={() => {
+                        setButtonsDisabled(true);
+                        setPrevCards([]);
+                        setCurrCard(null);
+                        openDeck();
+                    }}>NEW DECK</button>
+
+                <span className="deck-draw-btn-span">
+                    <button className="deck-btn deck-draw-btn" disabled={buttonsDisabled}
+                        onClick={() => {
+                            drawCard()
+                        }}>DRAW CARD</button>
+                </span>
+
             </div>
-            <div>
+            <div className="deck-cards-div">
                 {mainRender}
             </div>
+            {(prevCards) ? <AllCards cards={prevCards} currCard={currCard} /> : <></>}
         </div>
     )
 };
